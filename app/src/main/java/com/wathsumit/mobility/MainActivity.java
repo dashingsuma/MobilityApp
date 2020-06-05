@@ -65,33 +65,13 @@ public class MainActivity extends AppCompatActivity {
 
                 @Override
                 public void onBindViewHolder(@NonNull ImageModelHolder holder, int position) {
-                    holder.bind(getItem(position));
+                    holder.bind(getItem(position),position);
                 }
             });
         }
     }
 
-    private void showProgressDialog() {
-        if (pDialog == null) {
-            pDialog = new ProgressDialog(this);
-            pDialog.setMessage("Loading. Please wait...");
-            pDialog.setIndeterminate(false);
-            pDialog.setCancelable(false);
-        }
-        pDialog.show();
-    }
 
-    private void dismissProgressDialog() {
-        if (pDialog != null && pDialog.isShowing()) {
-            pDialog.dismiss();
-        }
-    }
-
-    @Override
-    protected void onDestroy() {
-        dismissProgressDialog();
-        super.onDestroy();
-    }
 
     class ImageModelHolder extends RecyclerView.ViewHolder {
         ItemIamgeBinding binding;
@@ -102,7 +82,7 @@ public class MainActivity extends AppCompatActivity {
             this.binding = binding;
         }
 
-        public void bind(ImageModel imageModel) {
+        public void bind(ImageModel imageModel,int position) {
             this.imageModel = imageModel;
             //binding.imgAuthImage.setImageBitmap(imageModel.getBtmap());
             binding.tvAuthName.setText(imageModel.getAuthor());
@@ -113,7 +93,7 @@ public class MainActivity extends AppCompatActivity {
             if (thumbnail == null) {
                 // Image was not found in cache; load it from the server
 
-                new DownloadImageTask(MainActivity.this, imageModel).execute(url1);
+                new DownloadImageTask(MainActivity.this, imageModel,position).execute(url1);
 
             } else {
                 binding.imgAuthImage.setImageBitmap(thumbnail);
@@ -125,21 +105,23 @@ public class MainActivity extends AppCompatActivity {
     private class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
         Context mContext;
         ImageModel mImageModel;
+        int mPosition;
 
-        public DownloadImageTask(Context context, ImageModel imageModel) {
+        public DownloadImageTask(Context context, ImageModel imageModel,int position) {
             mContext = context;
             mImageModel = imageModel;
+            mPosition = position;
         }
 
         public void onPreExecute() {
-            showProgressDialog();
+        //    showProgressDialog();
         }
 
         public void onPostExecute(Bitmap result) {
-            dismissProgressDialog();
+         //   dismissProgressDialog();
             if (result != null) {
                 photoThumbnails.put(mImageModel.getId(), result);
-
+                mBinding.recyclerMain.getAdapter().notifyItemChanged(mPosition);
             }
         }
 
@@ -196,6 +178,8 @@ public class MainActivity extends AppCompatActivity {
                 JSONArray arr = new JSONArray(inline);
                 for (int i = 0; i < arr.length(); i++) {
                     result.add(convertResult(arr.getJSONObject(i)));
+                    mImageModelList.add(convertResult(arr.getJSONObject(i)));
+
                 }
 
                 return result;
@@ -213,6 +197,27 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    private void showProgressDialog() {
+        if (pDialog == null) {
+            pDialog = new ProgressDialog(this);
+            pDialog.setMessage("Loading. Please wait...");
+            pDialog.setIndeterminate(false);
+            pDialog.setCancelable(false);
+        }
+        pDialog.show();
+    }
+
+    private void dismissProgressDialog() {
+        if (pDialog != null && pDialog.isShowing()) {
+            pDialog.dismiss();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        dismissProgressDialog();
+        super.onDestroy();
+    }
 }
 
 
